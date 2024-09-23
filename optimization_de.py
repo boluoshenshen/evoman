@@ -25,15 +25,22 @@ env = Environment(
 n_vars = (env.get_num_sensors() + 1) * n_hidden_neurons + (n_hidden_neurons + 1) * 5
 
 # Define the hyperparameters for differential evolution
-F_min, F_max = 0.5, 1.0  # Range for mutation factor
+F_min, F_max = 0.1, 1.0 # Range for mutation factor
 CR_min, CR_max = 0.5, 1.0  # Range for crossover probability
-population_size_min, population_size_max = 50, 200  # Range for population size
+population_size = 100  # Fixed population size
 generations = 30  # Number of generations
 
 # Fitness evaluation function: evaluates the performance of an individual (neural network weights)
 def evaluate(individual):
-    fitness, player_life, enemy_life, _ = env.play(pcont=individual)
-    return player_life - enemy_life  # This can be changed
+    # Play the game and get the relevant outputs
+    fitness, player_life, enemy_life, time_steps = env.play(pcont=individual)
+    
+    # Apply the fitness formula
+    gamma = 0.9
+    alpha = 0.1
+    fitness_value = gamma * (100 - enemy_life) + alpha * player_life - np.log(time_steps)
+    
+    return fitness_value
 
 # Initialize population: population size is controlled by the input parameter
 def initialize_population(population_size):
@@ -66,8 +73,8 @@ def selection(population, trial_population, fitness, trial_fitness):
             fitness[i] = trial_fitness[i]
     return population, fitness
 
-# Differential Evolution Optimization Function: input F, CR, and population_size
-def run_de_optimization(F, CR, population_size):
+# Differential Evolution Optimization Function: input F, CR
+def run_de_optimization(F, CR):
     # Initialize population
     population = initialize_population(population_size)
     fitness = np.array([evaluate(ind) for ind in population])
@@ -97,22 +104,22 @@ def run_de_optimization(F, CR, population_size):
     return best_fitness
 
 def evaluate_combination(params):
-    F, CR, population_size = params
-    print(f"Testing F={F}, CR={CR}, Population Size={population_size}")
-    fitness = run_de_optimization(F, CR, population_size)
-    return fitness, params
+    F, CR = params
+    print(f"Testing F={F}, CR={CR}")
+    fitness_values = [run_de_optimization(F, CR) for _ in range(10)]  # Run 10 times
+    mean_fitness = np.mean(fitness_values)  # Calculate the mean fitness over 10 runs
+    return mean_fitness, params
 
-# Hyperparameter tuning process: search for the best combination of F, CR, and population_size
+# Hyperparameter tuning process: search for the best combination of F, CR
 def tune_hyperparameters():
     best_fitness = -np.inf
     best_params = None
     param_combinations = []
 
     # Generate a list of all hyperparameter combinations
-    for F in np.linspace(F_min, F_max, 5):  # Search over mutation factor F
-        for CR in np.linspace(CR_min, CR_max, 5):  # Search over crossover probability CR
-            for population_size in range(population_size_min, population_size_max, 50):  # Search over population size
-                param_combinations.append((F, CR, population_size))
+    for F in np.linspace(F_min, F_max, 10):  # Search over mutation factor F
+        for CR in np.linspace(CR_min, CR_max, 101):  # Search over crossover probability CR
+            param_combinations.append((F, CR))
 
     # Use ProcessPoolExecutor to run the evaluations in parallel
     with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -120,15 +127,15 @@ def tune_hyperparameters():
         
         # Iterate through the completed futures
         for future in concurrent.futures.as_completed(futures):
-            fitness, params = future.result()
+            mean_fitness, params = future.result()
             
             # Record the best hyperparameter combination
-            if fitness > best_fitness:
-                best_fitness = fitness
+            if mean_fitness > best_fitness:
+                best_fitness = mean_fitness
                 best_params = params
     
     # Output the best result
-    print(f"Best parameters: F={best_params[0]}, CR={best_params[1]}, Population Size={best_params[2]} with fitness {best_fitness:.4f}")
+    print(f"Best parameters: F={best_params[0]}, CR={best_params[1]} with mean fitness {best_fitness:.4f}")
 
 # Ensure correct execution in multiprocessing contexts
 if __name__ == "__main__":
