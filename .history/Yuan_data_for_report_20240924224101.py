@@ -244,7 +244,7 @@ def set_best_parameters(EA_variable, fitness_mode):
     # fitness_value = gamma * (100 - enemy_energy) + alpha * player_energy - np.log(time)
     # fitness_mode = 1 : gamma = 0.9 alpha = 0.1
     # fitness_mode = 2 : gamma = 0.1 alpha = 0.
-    if EA_variable == "GA" :
+    if EA_variable == "DE" :
         if fitness_mode == 1: 
             best_mutation_probability = 0.055
             best_crossover_parameter = 0.7
@@ -252,7 +252,7 @@ def set_best_parameters(EA_variable, fitness_mode):
             best_mutation_probability = 0.055
             best_crossover_parameter = 0.7
 
-    if EA_variable == "DE" :
+    if EA_variable == "GA" :
         if fitness_mode == 1:
             F = 0.13
             CR = 0.97

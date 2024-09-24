@@ -252,7 +252,7 @@ def set_best_parameters(EA_variable, fitness_mode):
             best_mutation_probability = 0.055
             best_crossover_parameter = 0.7
 
-    if EA_variable == "DE" :
+    if EA_variable == "D" :
         if fitness_mode == 1:
             F = 0.13
             CR = 0.97
