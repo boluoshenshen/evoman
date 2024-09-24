@@ -280,6 +280,6 @@ def set_best_parameters(EA_variable, fitness_mode):
 EA_variable = "DE"
 fitness_mode = 1
 best_parameters = set_best_parameters(EA_variable, fitness_mode)
-runtime = 10
+runtime = 2
 # Choose GA or DE for testing
 repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime)
