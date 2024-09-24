@@ -6,9 +6,12 @@ import os
 import concurrent.futures
 
 n_hidden_neurons = 10
-experiment_name = "de_tuned_optimization"
+experiment_name = "de_tuned_optimization_altered_fitness_function"
 if not os.path.exists(experiment_name):
     os.makedirs(experiment_name)
+headless = True
+if headless:
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 # Initialize environment
 env = Environment(
@@ -25,8 +28,8 @@ env = Environment(
 n_vars = (env.get_num_sensors() + 1) * n_hidden_neurons + (n_hidden_neurons + 1) * 5
 
 # Define the hyperparameters for differential evolution
-F_min, F_max = 0.1, 1.0 # Range for mutation factor
-CR_min, CR_max = 0.5, 1.0  # Range for crossover probability
+F_min, F_max = 0.05, 0.15 # Range for mutation factor
+CR_min, CR_max = 0.9, 1.0  # Range for crossover probability
 population_size = 100  # Fixed population size
 generations = 30  # Number of generations
 
@@ -36,8 +39,8 @@ def evaluate(individual):
     fitness, player_life, enemy_life, time_steps = env.play(pcont=individual)
     
     # Apply the fitness formula
-    gamma = 0.9
-    alpha = 0.1
+    gamma = 0.1
+    alpha = 0.9
     fitness_value = gamma * (100 - enemy_life) + alpha * player_life - np.log(time_steps)
     
     return fitness_value
@@ -117,8 +120,8 @@ def tune_hyperparameters():
     param_combinations = []
 
     # Generate a list of all hyperparameter combinations
-    for F in np.linspace(F_min, F_max, 10):  # Search over mutation factor F
-        for CR in np.linspace(CR_min, CR_max, 101):  # Search over crossover probability CR
+    for F in np.linspace(F_min, F_max, 5):  # Search over mutation factor F
+        for CR in np.linspace(CR_min, CR_max, 5):  # Search over crossover probability CR
             param_combinations.append((F, CR))
 
     # Use ProcessPoolExecutor to run the evaluations in parallel
