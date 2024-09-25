@@ -100,30 +100,27 @@ def selection(population, trial_population, fitness, trial_fitness):
     return population, fitness
 
 # Differential evolution process
-def evolution_DE(best_parameters, fitness_mode, experiment_name):
+def evolution_DE(best_parameters, fitness_mode, experiment_name, training_enemy):
     size_of_pop = best_parameters["size_of_pop"]
     generations = best_parameters["generations"]
-    F = best_parameters.get("F", 0.5)  # Differential evolution parameters
-    CR = best_parameters.get("CR", 0.9)  
+    F = best_parameters.get("F", 0.5)  # Differential evolution parameter F
+    CR = best_parameters.get("CR", 0.9)  # Differential evolution crossover probability
     n_hidden = best_parameters["n_hidden"]
     dom_l = best_parameters["dom_l"]
     dom_u = best_parameters["dom_u"]
 
-    # Only train for enemy3
-    training_enemy = 3
-    evaluation_enemies = [3, 4, 5]  # Enemies to evaluate after each generation
-
-    # Initialization，Only train for enemy3
+    # Initialize the environment, only for training_enemy
     env = Environment(experiment_name=experiment_name, enemies=[training_enemy], playermode="ai", 
                       player_controller=player_controller(n_hidden), enemymode="static", level=2, 
                       speed="fastest", visuals=False)
-    
+
+    # Initialize the population
     amount_of_vars = (env.get_num_sensors() + 1) * n_hidden + (n_hidden + 1) * 5
     population = initialize_population(size_of_pop, amount_of_vars, dom_l, dom_u)
     fitness = evaluate(population, training_enemy, fitness_mode, n_hidden, experiment_name)
 
     for generation in range(generations):
-        
+        # Differential mutation and crossover
         mutant_population = mutation(population, F)
         trial_population = np.array([crossover(population[i], mutant_population[i], CR) for i in range(size_of_pop)])
         trial_fitness = evaluate(trial_population, training_enemy, fitness_mode, n_hidden, experiment_name)
@@ -131,29 +128,30 @@ def evolution_DE(best_parameters, fitness_mode, experiment_name):
         # Select individuals with higher fitness
         population, fitness = selection(population, trial_population, fitness, trial_fitness)
 
-        # Evaluate for enemy3, 4, 5 (to monitor generalization ability)
-        for enemy in evaluation_enemies:
-            fitness_values_eval = evaluate(population, enemy, fitness_mode, n_hidden, experiment_name)
-            gains_eval = np.array([individual_gain(individual, enemy, n_hidden, experiment_name) for individual in population])
+        # Calculate individual gains
+        gains = np.array([individual_gain(individual, training_enemy, n_hidden, experiment_name) for individual in population])
 
-            # Save the fitness and individual_gain of each generation on different enemies
-            eval_folder = f"{experiment_name}/generation_{generation}_evaluation_enemy_{enemy}"
-            if not os.path.exists(eval_folder):
-                os.makedirs(eval_folder)
+        # Save the fitness_values ​​and individual_gains of the current generation
+        eval_folder = f"{experiment_name}/generation_{generation}_evaluation_enemy_{training_enemy}"
+        if not os.path.exists(eval_folder):
+            os.makedirs(eval_folder)
 
-            np.savetxt(f"{eval_folder}/fitness_values.txt", fitness_values_eval)
-            np.savetxt(f"{eval_folder}/individual_gains.txt", gains_eval)
+        np.savetxt(f"{eval_folder}/fitness_values.txt", fitness)
+        np.savetxt(f"{eval_folder}/individual_gains.txt", gains)
 
+        # Save the best individual of each generation
         best_individual = population[np.argmax(fitness)]
-        np.savetxt(f"{experiment_name}/best_solution_gen_{generation}.txt", best_individual)
+        np.savetxt(f"{eval_folder}/best_solution_gen_{generation}.txt", best_individual)
 
+    # Return the best individual
     fittest_index = np.argmax(fitness)
     fittest_individual = population[fittest_index]
     return fittest_individual
 
 
-# GA evolution process
-def evolution_GA(best_parameters, fitness_mode, experiment_name):
+
+# GA evolution process 
+def evolution_GA(best_parameters, fitness_mode, experiment_name, training_enemy):
     size_of_pop = best_parameters["size_of_pop"]
     generations = best_parameters["generations"]
     mutation_probability = best_parameters["best_mutation_probability"]
@@ -161,37 +159,32 @@ def evolution_GA(best_parameters, fitness_mode, experiment_name):
     n_hidden = best_parameters["n_hidden"]
     dom_l = best_parameters["dom_l"]
     dom_u = best_parameters["dom_u"]
-    
-    
-    training_enemy = 3
-    evaluation_enemies = [3, 4, 5]  
 
-
+    # Initialize the environment, only for training_enemy
     env = Environment(experiment_name=experiment_name, enemies=[training_enemy], playermode="ai", 
                       player_controller=player_controller(n_hidden), enemymode="static", level=2, 
                       speed="fastest", visuals=False)
-    
+
     amount_of_vars = (env.get_num_sensors() + 1) * n_hidden + (n_hidden + 1) * 5
     population = initialize_population(size_of_pop, amount_of_vars, dom_l, dom_u)
 
     for generation in range(generations):
-        
+        # Calculate fitness and individual_gain for training_enemy
         fitness_values = evaluate(population, training_enemy, fitness_mode, n_hidden, experiment_name)
-        
-        for enemy in evaluation_enemies:
-            fitness_values_eval = evaluate(population, enemy, fitness_mode, n_hidden, experiment_name)
-            gains_eval = np.array([individual_gain(individual, enemy, n_hidden, experiment_name) for individual in population])
+        gains = np.array([individual_gain(individual, training_enemy, n_hidden, experiment_name) for individual in population])
 
-            eval_folder = f"{experiment_name}/generation_{generation}_evaluation_enemy_{enemy}"
-            if not os.path.exists(eval_folder):
-                os.makedirs(eval_folder)
+        # Save the fitness_values ​​and individual_gains of the current generation
+        eval_folder = f"{experiment_name}/generation_{generation}_evaluation_enemy_{training_enemy}"
+        if not os.path.exists(eval_folder):
+            os.makedirs(eval_folder)
 
-            np.savetxt(f"{eval_folder}/fitness_values.txt", fitness_values_eval)
-            np.savetxt(f"{eval_folder}/individual_gains.txt", gains_eval)
+        np.savetxt(f"{eval_folder}/fitness_values.txt", fitness_values)
+        np.savetxt(f"{eval_folder}/individual_gains.txt", gains)
 
+        # Selection, crossover and mutation
         new_pop = []
         for i in range(size_of_pop // 2):
-            parent_1 = tourn_selection(population, fitness_values)  
+            parent_1 = tourn_selection(population, fitness_values)
             parent_2 = tourn_selection(population, fitness_values)
             child1 = mutate_GA(uniform_crossover(parent_1, parent_2, crossover_parameter), mutation_probability, dom_l, dom_u)
             child2 = mutate_GA(uniform_crossover(parent_2, parent_1, crossover_parameter), mutation_probability, dom_l, dom_u)
@@ -199,41 +192,49 @@ def evolution_GA(best_parameters, fitness_mode, experiment_name):
 
         population = np.array(new_pop)
 
+        best_individual = population[np.argmax(fitness_values)]
+        np.savetxt(f"{eval_folder}/best_solution_gen_{generation}.txt", best_individual)
+    
     fittest_index = np.argmax(fitness_values)
     fittest_individual = population[fittest_index]
-    
+
     return fittest_individual
 
+
+
 # Main function, run the experiment
-def run(best_parameters, EA_variable, fitness_mode, run_id):
+def run(best_parameters, EA_variable, fitness_mode, run_id, training_enemy):
     # Set up basic experiment folder
     base_folder = 'Group_96_data_for_plots'
     algorithm_folder = f"{base_folder}/{EA_variable}"
     fitness_folder = f"{algorithm_folder}/fitness_mode_{fitness_mode}"
     
-    # Create directory structure
+    
     os.makedirs(fitness_folder, exist_ok=True)
 
     # Set the run directory
-    run_folder = f"{fitness_folder}/run{run_id}"
+    run_folder = f"{fitness_folder}/enemy_{training_enemy}/run{run_id}" 
+    # Create a separate folder for each enemy
     os.makedirs(run_folder, exist_ok=True)
 
-    # Choose to use GA or DE algorithm according to EA_variable
+    # Choose to use GA or DE algorithm
     if EA_variable == "GA":
-        fittest_individual = evolution_GA(best_parameters, fitness_mode, run_folder)
+        fittest_individual = evolution_GA(best_parameters, fitness_mode, run_folder, training_enemy)
     elif EA_variable == "DE":
-        fittest_individual = evolution_DE(best_parameters, fitness_mode, run_folder)
+        fittest_individual = evolution_DE(best_parameters, fitness_mode, run_folder, training_enemy)
     else:
         raise ValueError(f"Unknown EA_variable: {EA_variable}")
     
     # Save the best individual
     np.savetxt(f"{run_folder}/best_individual.txt", fittest_individual)
-    print(f"\nBest individual saved for {EA_variable} with fitness_mode={fitness_mode} in run{run_id}")
+    print(f"\nBest individual saved for {EA_variable} with fitness_mode={fitness_mode} in run{run_id} for enemy {training_enemy}")
 
 # Main function, run 10 experiments
 def repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime):
-    for run_id in range(1, runtime + 1):  # Run 10 times
-        run(best_parameters, EA_variable, fitness_mode, run_id)
+    # Iterate through each training enemy
+    for training_enemy in [3, 4, 5]:  
+        for run_id in range(1, runtime + 1):  # Multiple experiments per enemy
+            run(best_parameters, EA_variable, fitness_mode, run_id, training_enemy)
 
 
 def set_best_parameters(EA_variable, fitness_mode):
@@ -246,11 +247,11 @@ def set_best_parameters(EA_variable, fitness_mode):
     # fitness_mode = 2 : gamma = 0.1 alpha = 0.
     if EA_variable == "GA" :
         if fitness_mode == 1: 
-            best_mutation_probability = 0.055
-            best_crossover_parameter = 0.7
+            best_mutation_probability = 0.0275
+            best_crossover_parameter = 0.65
         if fitness_mode == 2: 
-            best_mutation_probability = 0.055
-            best_crossover_parameter = 0.7
+            best_mutation_probability = 0.0975
+            best_crossover_parameter = 0.675
 
     if EA_variable == "DE" :
         if fitness_mode == 1:
@@ -277,7 +278,7 @@ def set_best_parameters(EA_variable, fitness_mode):
     return best_parameters
 
 # SET EA ,FITNESS MODE and runtime
-EA_variable = "DE"
+EA_variable = "GA"
 fitness_mode = 1
 best_parameters = set_best_parameters(EA_variable, fitness_mode)
 runtime = 10
