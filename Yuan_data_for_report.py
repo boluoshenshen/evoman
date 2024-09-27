@@ -26,7 +26,8 @@ def simulate(individual, enemy, fitness_mode, n_hidden, experiment_name):
                       enemymode="static",
                       level=2,
                       speed="fastest",
-                      visuals=False)
+                      visuals=False,
+                      randomini="yes")
     fitness, player_energy, enemy_energy, time = env.play(pcont=individual)
     
     # Choose different formulas according to fitness mode
@@ -49,7 +50,8 @@ def individual_gain(individual, enemy, n_hidden, experiment_name):
                       enemymode="static",
                       level=2,
                       speed="fastest",
-                      visuals=False)
+                      visuals=False,
+                      randomini="yes")
     fitness, player_energy, enemy_energy, time = env.play(pcont=individual)
     gain_value = player_energy - enemy_energy
     return gain_value
@@ -112,7 +114,7 @@ def evolution_DE(best_parameters, fitness_mode, experiment_name, training_enemy)
     # Initialize the environment, only for training_enemy
     env = Environment(experiment_name=experiment_name, enemies=[training_enemy], playermode="ai", 
                       player_controller=player_controller(n_hidden), enemymode="static", level=2, 
-                      speed="fastest", visuals=False)
+                      speed="fastest", visuals=False,randomini="yes")
 
     # Initialize the population
     amount_of_vars = (env.get_num_sensors() + 1) * n_hidden + (n_hidden + 1) * 5
@@ -163,7 +165,7 @@ def evolution_GA(best_parameters, fitness_mode, experiment_name, training_enemy)
     # Initialize the environment, only for training_enemy
     env = Environment(experiment_name=experiment_name, enemies=[training_enemy], playermode="ai", 
                       player_controller=player_controller(n_hidden), enemymode="static", level=2, 
-                      speed="fastest", visuals=False)
+                      speed="fastest", visuals=False,randomini="yes")
 
     amount_of_vars = (env.get_num_sensors() + 1) * n_hidden + (n_hidden + 1) * 5
     population = initialize_population(size_of_pop, amount_of_vars, dom_l, dom_u)
@@ -191,7 +193,7 @@ def evolution_GA(best_parameters, fitness_mode, experiment_name, training_enemy)
             new_pop.extend([child1, child2])
 
         population = np.array(new_pop)
-
+        fitness_values = evaluate(population, training_enemy, fitness_mode, n_hidden, experiment_name)  # Recalculate fitness after mutation
         best_individual = population[np.argmax(fitness_values)]
         np.savetxt(f"{eval_folder}/best_solution_gen_{generation}.txt", best_individual)
     
@@ -283,4 +285,5 @@ fitness_mode = 1
 best_parameters = set_best_parameters(EA_variable, fitness_mode)
 runtime = 10
 # Choose GA or DE for testing
-repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime)
+for fitness_mode in [1,2]:
+    repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime)
