@@ -197,8 +197,8 @@ def evolution_GA(best_parameters, fitness_mode, experiment_name, training_enemy)
         best_individual = population[np.argmax(fitness_values)]
         np.savetxt(f"{eval_folder}/best_solution_gen_{generation}.txt", best_individual)
     
-    fittest_index = np.argmax(fitness_values)
-    fittest_individual = population[fittest_index]
+        fittest_index = np.argmax(fitness_values)
+        fittest_individual = population[fittest_index]
 
     return fittest_individual
 
@@ -234,7 +234,7 @@ def run(best_parameters, EA_variable, fitness_mode, run_id, training_enemy):
 # Main function, run 10 experiments
 def repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime):
     # Iterate through each training enemy
-    for training_enemy in [3, 4, 5]:  
+    for training_enemy in [3]:  
         for run_id in range(1, runtime + 1):  # Multiple experiments per enemy
             run(best_parameters, EA_variable, fitness_mode, run_id, training_enemy)
 
@@ -250,7 +250,8 @@ def set_best_parameters(EA_variable, fitness_mode):
     if EA_variable == "GA" :
         if fitness_mode == 1: 
             best_mutation_probability = 0.0275
-            best_crossover_parameter = 0.65
+            best_crossover_parameter = 0.65 
+
         if fitness_mode == 2: 
             best_mutation_probability = 0.0975
             best_crossover_parameter = 0.675
@@ -281,9 +282,8 @@ def set_best_parameters(EA_variable, fitness_mode):
 
 # SET EA ,FITNESS MODE and runtime
 EA_variable = "GA"
-fitness_mode = 1
+fitness_mode = 2
 best_parameters = set_best_parameters(EA_variable, fitness_mode)
-runtime = 10
+runtime = 5
 # Choose GA or DE for testing
-for fitness_mode in [1,2]:
-    repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime)
+repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime)
