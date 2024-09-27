@@ -234,7 +234,7 @@ def run(best_parameters, EA_variable, fitness_mode, run_id, training_enemy):
 # Main function, run 10 experiments
 def repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime):
     # Iterate through each training enemy
-    for training_enemy in [3]:  
+    for training_enemy in [3,4,5]:  
         for run_id in range(1, runtime + 1):  # Multiple experiments per enemy
             run(best_parameters, EA_variable, fitness_mode, run_id, training_enemy)
 
@@ -282,8 +282,9 @@ def set_best_parameters(EA_variable, fitness_mode):
 
 # SET EA ,FITNESS MODE and runtime
 EA_variable = "GA"
-fitness_mode = 2
+fitness_mode = 1
 best_parameters = set_best_parameters(EA_variable, fitness_mode)
-runtime = 5
+runtime = 10
 # Choose GA or DE for testing
 repeat_experiments(best_parameters, EA_variable, fitness_mode, runtime)
+
