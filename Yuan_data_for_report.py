@@ -282,7 +282,7 @@ def set_best_parameters(EA_variable, fitness_mode):
 
 # SET EA ,FITNESS MODE and runtime
 EA_variable = "GA"
-fitness_mode = 1
+fitness_mode = 2
 best_parameters = set_best_parameters(EA_variable, fitness_mode)
 runtime = 10
 # Choose GA or DE for testing
